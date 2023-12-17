@@ -11,7 +11,7 @@ namespace LSARFunc {
     RE::TESObjectARMA* GetArmorAddonFromFormID(uint32_t formID);
     RE::TESObjectARMO* GetArmorFromFormID(uint32_t formID);
     RE::BGSBipedObjectForm::BipedObjectSlot Int2BOSlot(uint32_t slot);
-    uint32_t BOSlot2Int(RE::BGSBipedObjectForm::BipedObjectSlot BOSlot);
+    //uint32_t BOSlot2Int(RE::BGSBipedObjectForm::BipedObjectSlot BOSlot);
     bool GetSlotMask(RE::TESObjectARMA* aa, uint32_t slot);
     void AddSlotToMask(RE::TESObjectARMA* aa, uint32_t slot);
     void RemoveSlotFromMask(RE::TESObjectARMA* aa, uint32_t slot);

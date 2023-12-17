@@ -42,13 +42,13 @@ namespace LSARFunc {
 
     RE::BGSBipedObjectForm::BipedObjectSlot Int2BOSlot(uint32_t slot) 
     {
-        return static_cast<RE::BGSBipedObjectForm::BipedObjectSlot>(slot - 30);
+        return static_cast<RE::BGSBipedObjectForm::BipedObjectSlot>(1 << (slot - 30));
     }
 
-    uint32_t BOSlot2Int(RE::BGSBipedObjectForm::BipedObjectSlot BOSlot)
-    {
-        return ((int)BOSlot + 30);
-    }
+    //uint32_t BOSlot2Int(RE::BGSBipedObjectForm::BipedObjectSlot BOSlot)
+    //{
+    //    return ((int)BOSlot + 30);
+    //}
 
     bool GetSlotMask(RE::TESObjectARMA* aa, uint32_t slot) 
     {

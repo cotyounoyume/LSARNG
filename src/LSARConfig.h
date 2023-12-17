@@ -9,16 +9,6 @@
 #include "PCH.h"
 #include "LSARFunc.h"
 #include "Utility.h"
-//#include "skse64/GameData.h"
-//#include "skse64/GameExtraData.h"
-//#include "skse64/GameForms.h"
-//#include "skse64/GameObjects.h"
-//#include "skse64/GameRTTI.h"
-//#include "skse64/GameReferences.h"
-//#include "skse64/GameThreads.h"
-//#include "skse64/NiExtraData.h"
-//#include "skse64/PapyrusActor.h"
-//#include "skse64_common/Utilities.h"
 
 typedef struct _LSARItemARMO {
     std::string key;
@@ -81,6 +71,8 @@ private:
     static bool _getLRConfig(std::string str, std::string col);
     static uint32_t _getFormID(std::string formIDstr, uint8_t modIndex, bool isARMAMode);
     static uint32_t _getApparelType(std::string str, std::string col);
+    static void PrintAllSlotFromARMA(RE::TESObjectARMA* aa);
+    static void setModIndex(std::string filename, int num);
 
 public:
     LSARConfig();

@@ -8,7 +8,6 @@ namespace Papyrus {
 
     class LSARNG {
     public:
-        // static inline RE::TESObjectREFR* GetSelectedReference(RE::RE::StaticFunctionTag*);
         static inline void test(RE::StaticFunctionTag*) { logs::info("Action from papyrus"); }
 
     	static inline bool HasSlotX(RE::StaticFunctionTag*, RE::TESObjectARMO* thisArmor, uint32_t slot) {
@@ -16,29 +15,11 @@ namespace Papyrus {
             auto aa = LSARFunc::GetLSARAA(thisArmor);
             if (!aa) return NULL;
             return LSARFunc::GetSlotMask(aa, slot);
-            //slot -= 30;
-
-            //UInt32 thisSlot = aa->biped.GetSlotMask();
-            //UInt32 mask = 1 << slot;
-            //if (thisSlot & mask) {
-            //    logs::info("ture : ARMA(%08X)'s slot=%08X(%d), targetSlot=0x%08X(%d = %d), mask=%d", aa->formID, thisSlot,
-            //             thisSlot, slot, slot, slot + 30, mask);
-            //    return true;
-            //} else {
-            //    logs::info("false: ARMA(%08X)'s slot=%08X(%d), targetSlot=0x%08X(%d = %d), mask=%d", aa->formID, thisSlot,
-            //             thisSlot, slot, slot, slot + 30, mask);
-            //    return false;
-            //}
         }
 
         static inline bool IsLSARArmor(RE::StaticFunctionTag*, RE::TESObjectARMO* thisArmor) {
             if (!thisArmor) return NULL;
             return LSARFunc::GetLSARAA(thisArmor) != NULL;
-            //TESObjectARMA* aa = getLSARAA(thisArmor);
-            //if (!aa)
-            //    return false;
-            //else
-            //    return true;
         }
 
         static inline void ResetArmorAddon(RE::StaticFunctionTag*, uint32_t isLSARClothOn, uint32_t isLSARLArmorOn,
@@ -69,40 +50,12 @@ namespace Papyrus {
         static inline void SwapSlotX(RE::StaticFunctionTag*, RE::TESObjectARMO* thisArmor, uint32_t slot) {
             if (!thisArmor) return;
             auto aa = LSARFunc::GetLSARAA(thisArmor);
-            //TESObjectARMA* aa = getLSARAA(thisArmor);
-            if (!aa) {
-                return;
-            }
-            //UInt32 thisSlot = aa->biped.GetSlotMask();
-            //slot -= 30;
-            //UInt32 mask = 1 << slot;
-            //logs::info("Before  : ARMA(%08X)'s slot=%08X(%d), targetSlot=0x%08X(%d = %d), mask=%d", aa->formID, thisSlot,
-            //         thisSlot, slot, slot, slot + 30, mask);
-            //		logs::info("Before: ARMA(%08X)'s slot=%08X, targetSlot=%08X", aa->formID, thisSlot, slot);
-            if (LSARFunc::GetSlotMask(aa, slot)) {
+            if (!aa) return;
+
+            if (LSARFunc::GetSlotMask(aa, slot)) 
                 LSARFunc::RemoveSlotFromMask(aa, slot);
-                return;
-            } else {
+            else 
                 LSARFunc::AddSlotToMask(aa, slot);
-                return;
-            }
-
-
-            //if (thisSlot & mask) {
-            //    aa->biped.RemoveSlotFromMask(mask);
-            //    thisSlot = aa->biped.GetSlotMask();
-            //    logs::info("AfterOFF: ARMA(%08X)'s slot=%08X(%d), targetSlot=0x%08X(%d = %d), mask=%d", aa->formID,
-            //             thisSlot, thisSlot, slot, slot, slot + 30, mask);
-            //    //			logs::info("AfterT:  ARMA(%08X)'s slot=%08X, targetSlot=%08X", aa->formID, thisSlot, slot);
-            //    return;
-            //} else {
-            //    aa->biped.AddSlotToMask(mask);
-            //    thisSlot = aa->biped.GetSlotMask();
-            //    logs::info("AfterON : ARMA(%08X)'s slot=%08X(%d), targetSlot=0x%08X(%d = %d), mask=%d", aa->formID,
-            //             thisSlot, thisSlot, slot, slot, slot + 30, mask);
-            //    //			logs::info("AfterF:  ARMA(%08X)'s slot=%08X, targetSlot=%08X", aa->formID, thisSlot, slot);
-            //    return;
-            //}
         }
 
         static inline bool Register(RE::BSScript::IVirtualMachine* a_vm) {
