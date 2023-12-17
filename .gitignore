@@ -17,3 +17,8 @@ cmake-build*
 
 # Skyrim archive files
 *.bsa
+aaacopy.bat
+
+*.pex
+scripts/source/Papyrus Compiler
+scripts/source/Caprica*
