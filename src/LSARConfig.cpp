@@ -4,7 +4,7 @@ std::vector<LSARItemARMA> LSARConfig::armas = std::vector<LSARItemARMA>();
 std::vector<LSARItemARMO> LSARConfig::armos = std::vector<LSARItemARMO>();
 std::unordered_map<std::string, LSARItemARMA> LSARConfig::arma_map = std::unordered_map<std::string, LSARItemARMA>();
 
-uint8_t LSARConfig::modIndexes[5] = {};
+std::string LSARConfig::modNames[5] = {};
 bool LSARConfig::hasDlc[5] = {};
 int LSARConfig::wOrLGlobal = 0;
 
@@ -14,8 +14,9 @@ LSARConfig::LSARConfig() {}
 
 void LSARConfig::initArmorAddon(void) {
     auto playerRef = RE::TESForm::LookupByID<RE::TESObjectREFR>(0x14);
+    if (!playerRef) return;
     auto cell = playerRef->GetParentCell();
-    uint32_t num = cell->GetRuntimeData().objectList.size();
+    if (!cell) return;
     for (uint32_t i = 0; i < cell->GetRuntimeData().objectList.size(); i++) {
         auto objRef = cell->GetRuntimeData().objectList[i];
         if (!objRef) continue;
@@ -32,17 +33,53 @@ void LSARConfig::setModIndexes(void) {
     setModIndex("HearthFires.esm", 2);
     setModIndex("Dragonborn.esm", 3);
     setModIndex("zzLSAR.esp", 4);
+    Debugging();
 }
 
-void LSARConfig::setModIndex(std::string filename, int num) 
+void LSARConfig::setModIndex(std::string filename, int num)
 {
+    modNames[num] = filename;
+    hasDlc[num] = false;
+
     auto dhnd = RE::TESDataHandler::GetSingleton();
-    if (dhnd->LookupModByName(filename) != NULL) {
-        hasDlc[num] = true;
-        modIndexes[num] = dhnd->GetLoadedModIndex(filename).value();
-        logs::info("{}'s index = {:02X}", filename, modIndexes[num]);
-    } else {
-        hasDlc[num] = false;
+    if (!dhnd) {
+        logs::error("TESDataHandler is null");
+        return;
+    }
+    // LookupModByName also finds ESL-flagged (light) plugins, unlike GetLoadedModIndex.
+    auto file = dhnd->LookupModByName(filename);
+    if (!file || file->GetCompileIndex() == 0xFF) {
+        logs::info("{} is not loaded", filename);
+        return;
+    }
+    hasDlc[num] = true;
+    if (file->IsLight())
+        logs::info("{} is loaded as light plugin: FE:{:03X}", filename, file->GetSmallFileCompileIndex());
+    else
+        logs::info("{}'s index = {:02X}", filename, file->GetCompileIndex());
+}
+
+void LSARConfig::Debugging() {
+    logs::info("in LSARConfig::Debugging:");
+    auto dhnd = RE::TESDataHandler::GetSingleton();
+    if (!dhnd) return;
+    auto num = dhnd->GetLoadedModCount();
+    logs::info("in LSARConfig::Debugging: mod count:{}", num);
+
+    for (int i = 0; i < num; i++) {
+        auto file = dhnd->LookupLoadedModByIndex(static_cast<uint8_t>(i));
+        if (file) {
+            auto filename = std::string(file->GetFilename());
+            logs::info("num:{:03d}\t{}", i, filename);
+            auto data = dhnd->GetLoadedModIndex(filename);
+            if (data) {
+                logs::info("  ->GetLoadedModIndex({}) is {:02X}", filename, data.value());
+            } else {
+                logs::info("  ->GetLoadedModIndex({}) is failed.", filename);
+            }
+        } else {
+            logs::info("can't get filename by index[num={}]", i);
+        }
     }
 }
 
@@ -111,7 +148,7 @@ void LSARConfig::readIniFileARMO() {
             //			nop
         } else if (std::regex_match(str, reConf)) {
             LSARItemARMO akItem = _str2armo(str);
-            if (arma_map[akItem.key].isEnabled) {
+            if (akItem.isEnabled) {
                 armos.push_back(akItem);
             } else {
                 logs::info("ERROR: key = {}, invalid line: {}", akItem.key.c_str(), str.c_str());
@@ -130,7 +167,7 @@ LSARItemARMA LSARConfig::_str2arma(std::string str) {
     // ArchmageRobesAA	010146C3	C	L	1	1	1	1	3	0	zzLSARLCArchmageRobesAA
 
     akItem.name = items[0];
-    akItem.formId = _getFormID(items[1], modIndexes[4], true);
+    akItem.formId = _getFormID(items[1], 4);
     akItem.apparelType = _getApparelType(str, items[2]);
     akItem.isLoose = akItem.isLooseOrg = _getLRConfig(str, items[3]);
     akItem.isSkirtOn = akItem.isSkirtOnOrg = _getBooleanConfig(str, items[4]);
@@ -160,29 +197,39 @@ LSARItemARMO LSARConfig::_str2armo(std::string str) {
     akItem.name = items[3];
     akItem.key = items[1] + akItem.name;
     uint32_t dlcType = std::stoi(items[2]);
-    uint8_t modIndex = modIndexes[dlcType];
-    akItem.armoID = _getFormID(items[0], modIndexes[dlcType], false);
-    akItem.isEnabled = arma_map[akItem.key].isEnabled;
+    akItem.num = 0;
+    akItem.armaOrgID = 0;
+    akItem.isEnabled = false;
+    if (dlcType > 3 || !hasDlc[dlcType]) {
+        return akItem;
+    }
+    akItem.armoID = _getFormID(items[0], dlcType);
     akItem.armaDstID = arma_map[akItem.key].formId;
     akItem.apparelType = arma_map[akItem.key].apparelType;
     auto srcAM = LSARFunc::GetArmorFromFormID(akItem.armoID);
+    if (!srcAM) {
+        logs::info("ERROR: ARMO {:08X} ({}) not found", akItem.armoID, akItem.name);
+        return akItem;
+    }
 
-    int target_num = 0;
+    uint32_t target_num = 0;
     if (akItem.apparelType != 9) {
-        for (int i = 0; i < srcAM->armorAddons.size(); i++) {
-            if (LSARFunc::GetSlotMask(srcAM->armorAddons[i], 32)){
+        for (uint32_t i = 0; i < srcAM->armorAddons.size(); i++) {
+            if (srcAM->armorAddons[i] && LSARFunc::GetSlotMask(srcAM->armorAddons[i], 32)) {
                 target_num = i;
                 break;
             }
         }
-        akItem.num = target_num;
-
-        akItem.armaOrgID = srcAM->armorAddons[target_num]->formID;
     } else {
         target_num = 1;  // hard coding for cultist mask
-        akItem.num = target_num;
-        akItem.armaOrgID = srcAM->armorAddons[target_num]->formID;
     }
+    if (target_num >= srcAM->armorAddons.size() || !srcAM->armorAddons[target_num]) {
+        logs::info("ERROR: ARMO {:08X} ({}) has no armor addon #{}", akItem.armoID, akItem.name, target_num);
+        return akItem;
+    }
+    akItem.num = target_num;
+    akItem.armaOrgID = srcAM->armorAddons[target_num]->formID;
+    akItem.isEnabled = arma_map[akItem.key].isEnabled;
 
     return akItem;
 }
@@ -245,7 +292,10 @@ void LSARConfig::resetArmor() {
 
         LSARItemARMA arma = arma_map[key];
         auto targetARMO = LSARFunc::GetArmorFromFormID(it->armoID);
-        uint32_t srcARMAFormId = targetARMO->armorAddons[it->num]->formID;
+        if (!targetARMO || it->num >= targetARMO->armorAddons.size()) {
+            logs::info("ERROR: ARMO {:08X} ({}) not usable", it->armoID, it->name);
+            continue;
+        }
         uint32_t dstARMAFormId = 0;
         if (arma.isEnabled)
             dstARMAFormId = arma.formId;
@@ -253,6 +303,10 @@ void LSARConfig::resetArmor() {
             dstARMAFormId = it->armaOrgID;
 
         auto dstARMA = LSARFunc::GetArmorAddonFromFormID(dstARMAFormId);
+        if (!dstARMA) {
+            logs::info("ERROR: ARMA {:08X} for {} not found", dstARMAFormId, it->name);
+            continue;
+        }
         targetARMO->armorAddons[it->num] = dstARMA;
 
         if (arma.isEnabled && it->apparelType == 9) {
@@ -275,7 +329,7 @@ void LSARConfig::makeRealAll() {
 void LSARConfig::_makeReal(LSARItemARMA akItem) {
     auto srcAA = LSARFunc::GetArmorAddonFromFormID(akItem.formId);
     if (!srcAA) {
-        logs::info("ERROR: srcAA(%X) is null", akItem.formId);
+        logs::info("ERROR: srcAA({:08X}) is null", akItem.formId);
         return;
     }
     if (!akItem.isEnabled) return;
@@ -303,7 +357,7 @@ bool LSARConfig::_getBooleanConfig(std::string str, std::string col) {
     else if (v == 1)
         result = true;
     else
-        logs::info("ERROR: invalid argument %s in %s", col, str);
+        logs::info("ERROR: invalid argument {} in {}", col, str);
     return result;
 }
 
@@ -314,18 +368,20 @@ bool LSARConfig::_getLRConfig(std::string str, std::string col) {
     else if (col.compare("W") == 0)
         result = false;
     else
-        logs::info("ERROR: invalid argument %s in %s", col, str);
+        logs::info("ERROR: invalid argument {} in {}", col, str);
     return result;
 }
 
-uint32_t LSARConfig::_getFormID(std::string formIDstr, uint8_t modIndex, bool isARMAMode) {
-    uint32_t formID;
-    uint8_t ioffset = 24;
-    formID = std::strtoul(formIDstr.c_str(), NULL, 16);
-    formID = formID & 0x00FFFFFF;
+uint32_t LSARConfig::_getFormID(std::string formIDstr, uint32_t modSlot) {
+    auto dhnd = RE::TESDataHandler::GetSingleton();
+    if (!dhnd || modSlot >= std::size(modNames)) return 0;
+    auto file = dhnd->LookupModByName(modNames[modSlot]);
+    if (!file) return 0;
 
-    formID = formID | (modIndex << ioffset);
-    return formID;
+    uint32_t localID = std::strtoul(formIDstr.c_str(), NULL, 16);
+    // Light plugins (ESL / ESPFE) only own the lower 12 bits.
+    localID &= file->IsLight() ? 0x00000FFF : 0x00FFFFFF;
+    return dhnd->LookupFormID(localID, modNames[modSlot]);
 }
 
 uint32_t LSARConfig::_getApparelType(std::string str, std::string col) {
@@ -339,7 +395,7 @@ uint32_t LSARConfig::_getApparelType(std::string str, std::string col) {
     else if (col.compare("O") == 0)
         result = 9;
     else
-        logs::info("ERROR: invalid argument %s in %s", col, str);
+        logs::info("ERROR: invalid argument {} in {}", col, str);
     return result;
 }
 

@@ -53,7 +53,7 @@ private:
     static std::vector<LSARItemARMA> armas;
     static std::unordered_map<std::string, LSARItemARMA> arma_map;
     static bool hasDlc[5];
-    static uint8_t modIndexes[5];
+    static std::string modNames[5];
 
     // public:
     static void _makeReal(LSARItemARMA akItem);
@@ -69,7 +69,7 @@ private:
     static std::string _getIniFilePath(std::string type);
     static bool _getBooleanConfig(std::string str, std::string col);
     static bool _getLRConfig(std::string str, std::string col);
-    static uint32_t _getFormID(std::string formIDstr, uint8_t modIndex, bool isARMAMode);
+    static uint32_t _getFormID(std::string formIDstr, uint32_t modSlot);
     static uint32_t _getApparelType(std::string str, std::string col);
     static void PrintAllSlotFromARMA(RE::TESObjectARMA* aa);
     static void setModIndex(std::string filename, int num);
@@ -83,8 +83,9 @@ public:
     static void debugPrint();
     static void setModIndexes();
     static void makeRealAll();
-    static void resetArmorAddon(uint32_t isLSARClothOn, uint32_t isLSARLArmorOn, uint32_t isLSARHArmorOn, uint32_t isLoose,
-                                uint32_t slot49, uint32_t slot48, uint32_t slot56, uint32_t slot53);
+    static void resetArmorAddon(uint32_t isLSARClothOn, uint32_t isLSARLArmorOn, uint32_t isLSARHArmorOn,
+                                uint32_t isLoose, uint32_t slot49, uint32_t slot48, uint32_t slot56, uint32_t slot53);
     static void resetArmor();
     static void initArmorAddon();
+    static void Debugging();
 };
