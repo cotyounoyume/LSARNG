@@ -26,8 +26,8 @@ namespace Papyrus {
                              uint32_t isLSARHArmorOn, uint32_t isLoose, uint32_t slot49, uint32_t slot48,
                              uint32_t slot56, uint32_t slot53) {
             logs::info(
-                "isLSARClothOn=%X, isLSARLArmorOn=%X, isLSARHArmorOn=%X, isLoose=%X, slot49=%X, slot48=%X, slot56=%X, "
-                "slot53=%X",
+                "isLSARClothOn={}, isLSARLArmorOn={}, isLSARHArmorOn={}, isLoose={}, slot49={}, slot48={}, slot56={}, "
+                "slot53={}",
                 isLSARClothOn, isLSARLArmorOn, isLSARHArmorOn, isLoose, slot49, slot48, slot56, slot53);
 
             logs::info("in  ResetArmorAddon()");
